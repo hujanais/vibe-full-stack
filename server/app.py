@@ -1,4 +1,5 @@
 """Main FastAPI application."""
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from core.database import engine, Base
@@ -11,7 +12,7 @@ Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="Vibe Rocket Flight API",
     description="API for managing rocket flight jobs",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Configure CORS
@@ -39,4 +40,3 @@ async def root():
 async def health():
     """Health check endpoint."""
     return {"status": "healthy"}
-
