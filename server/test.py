@@ -9,4 +9,5 @@ if __name__ == "__main__":
     # print(settings.ACCESS_TOKEN_EXPIRE_MINUTES)
 
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-    pwd_context.hash("test")
+    hass7 = pwd_context.hash("test")
+    print(hass7)
