@@ -1,29 +1,26 @@
 """Configuration settings for the application."""
-from pydantic_settings import BaseSettings
-from typing import Optional
+
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
-class Settings(BaseSettings):
+class Settings:
     """Application settings."""
-    
+
     # Database
-    DATABASE_URL: str = "postgresql://user:password@localhost:5432/vibe_db"
-    
+    DATABASE_URL: str = os.getenv("DATABASE_URL")
+
     # JWT
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    SECRET_KEY: str = os.getenv("SECRET_KEY")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    
+
     # Airflow
-    AIRFLOW_BASE_URL: str = "http://localhost:8080"
-    AIRFLOW_USERNAME: Optional[str] = None
-    AIRFLOW_PASSWORD: Optional[str] = None
-    
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    AIRFLOW_BASE_URL: str = os.getenv("AIRFLOW_BASE_URL")
+    AIRFLOW_USERNAME: str = os.getenv("AIRFLOW_USERNAME")
+    AIRFLOW_PASSWORD: str = os.getenv("AIRFLOW_PASSWORD")
 
 
 settings = Settings()
-
-
