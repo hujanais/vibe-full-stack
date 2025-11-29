@@ -1,10 +1,10 @@
 """Pydantic schemas for request/response validation."""
 from .auth import Token, TokenData, UserCreate, UserResponse, LoginRequest
 from .rocket_job import (
-    RocketJobCreate,
-    RocketJobUpdate,
-    RocketJobResponse,
-    RocketJobHistoryResponse
+    RocketCreate,
+    RocketUpdate,
+    RocketResponse,
+    RocketHistoryResponse
 )
 
 __all__ = [
@@ -13,10 +13,10 @@ __all__ = [
     "UserCreate",
     "UserResponse",
     "LoginRequest",
-    "RocketJobCreate",
-    "RocketJobUpdate",
-    "RocketJobResponse",
-    "RocketJobHistoryResponse",
+    "RocketCreate",
+    "RocketUpdate",
+    "RocketResponse",
+    "RocketHistoryResponse",
 ]
 
 

@@ -27,6 +27,8 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router)
 app.include_router(jobs.router)
+app.include_router(jobs.rocket_router)
+app.include_router(jobs.flight_router)
 app.include_router(websockets.router)
 
 

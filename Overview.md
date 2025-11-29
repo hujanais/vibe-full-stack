@@ -6,12 +6,12 @@ Rocket states:
 Preparing: Rocket under preparation.
 Ready: Ready to launch.
 InFlight: Rocket launched and en-route to Mars. indicated as {source: Earth, destination: Mars}
-Landed_On_Mars: landed and unloading.
+Landed: landed and unloading.
 Inflight: Return flight to Earth. indicated as {source: Mars, destination: Earth}
 After return to earth, state transitions back to Preparing. {source: Mars, destination: Earth}
 
 The data-model of a rocket may contain.
-state: Preparing, Ready, InFlight, Landed_On_Mars
+state: Preparing, Ready, InFlight, Landed
 source: The origination of the flight.
 destination: The destination of the flight.
 location: The current location of the spaceship.

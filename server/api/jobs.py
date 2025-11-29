@@ -1,41 +1,46 @@
 """Rocket job management endpoints."""
 from typing import List, Optional
+from uuid import UUID, uuid4
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from core.database import get_db
 from api.dependencies import get_current_user
 from models.user import User
-from models.rocket_job import RocketJob
+from models.rocket_job import Rocket
 from models.job_history import JobHistory
 from models.enums import RocketState, JobStatus
 from schemas.rocket_job import (
-    RocketJobCreate,
-    RocketJobUpdate,
-    RocketJobResponse,
-    RocketJobHistoryResponse,
+    RocketCreate,
+    RocketUpdate,
+    RocketResponse,
+    RocketHistoryResponse,
     JobHistoryEntry
 )
-from services.airflow_service import airflow_service
+from services.airflow_service2 import airflow_service2
 from datetime import datetime
 
 router = APIRouter(prefix="/api/v1/job", tags=["jobs"])
+rocket_router = APIRouter(prefix="/api/v1/rocket", tags=["rockets"])
+flight_router = APIRouter(prefix="/api/v1/flight", tags=["flight"])
 
 
-@router.post("", response_model=RocketJobResponse, status_code=status.HTTP_201_CREATED)
-async def create_job(
-    job_data: RocketJobCreate,
+@router.post("", response_model=RocketResponse, status_code=status.HTTP_201_CREATED)
+async def create_rocket(
+    job_data: RocketCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Create a new rocket job and trigger Airflow DAG."""
-    # Create rocket job
-    new_job = RocketJob(
+    """Create a new rocket."""
+    # Create new rocket
+    new_job = Rocket(
         state=RocketState.PREPARING,
-        source=job_data.source,
-        destination=job_data.destination,
-        location=job_data.source,  # Start at source
-        estimated_time=job_data.estimated_time,
-        status=JobStatus.PENDING,
+        name=job_data.name,
+        source='earth',
+        destination='mars',
+        location='earth',  # Start at source
+        estimated_time=999999,
+        status=JobStatus.IDLE,
         user_id=current_user.id
     )
     db.add(new_job)
@@ -44,97 +49,95 @@ async def create_job(
     
     # Create initial history entry
     history_entry = JobHistory(
-        job_id=new_job.id,
+        rocket_id=new_job.id,
         state=RocketState.PREPARING,
-        message=f"Job created: {job_data.source} -> {job_data.destination}"
+        message=f"Job created: {new_job.source} -> {new_job.destination}"
     )
     db.add(history_entry)
+    db.commit()
     
-    # Trigger Airflow DAG
-    dag_id = "rocket_flight_dag"  # This should match your Airflow DAG ID
-    dag_run_id = airflow_service.trigger_dag(
-        dag_id=dag_id,
-        job_id=new_job.id,
-        conf={"job_id": str(new_job.id)}
+    # Trigger rocket process to start state transitions
+    airflow_service2.start_rocket_process(
+        rocket_id=str(new_job.id),
+        source=new_job.source,
+        destination=new_job.destination,
+        db=db
     )
     
-    if dag_run_id:
-        new_job.airflow_dag_run_id = dag_run_id
-        new_job.status = JobStatus.RUNNING
-    
-    db.commit()
     db.refresh(new_job)
-    
     return new_job
 
 
-@router.get("", response_model=List[RocketJobResponse])
-async def get_jobs(
+@router.get("", response_model=List[RocketResponse])
+async def get_rockets(
     state: Optional[RocketState] = Query(None, description="Filter by rocket state"),
     status_filter: Optional[JobStatus] = Query(None, alias="status", description="Filter by job status"),
     user_id: Optional[str] = Query(None, description="Filter by user ID"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get all jobs with optional filters."""
-    query = db.query(RocketJob)
+    """Get all rockets with optional filters."""
+    query = db.query(Rocket)
     
     # Apply filters
     if state:
-        query = query.filter(RocketJob.state == state)
+        query = query.filter(Rocket.state == state)
     if status_filter:
-        query = query.filter(RocketJob.status == status_filter)
+        query = query.filter(Rocket.status == status_filter)
     if user_id:
-        query = query.filter(RocketJob.user_id == user_id)
+        query = query.filter(Rocket.user_id == user_id)
     
-    jobs = query.order_by(RocketJob.created_at.desc()).all()
+    jobs = query.order_by(Rocket.created_at.desc()).all()
     return jobs
 
 
-@router.get("/{job_id}", response_model=RocketJobResponse)
-async def get_job(
-    job_id: str,
+@rocket_router.get("/{rocket_id}", response_model=RocketResponse)
+async def get_rocket(
+    rocket_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get job by ID."""
-    job = db.query(RocketJob).filter(RocketJob.id == job_id).first()
+    """Get rocket by ID."""
+    job = db.query(Rocket).filter(Rocket.id == rocket_id).first()
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Job not found"
+            detail="Rocket not found"
         )
     return job
 
 
-@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_job(
-    job_id: str,
+@rocket_router.delete("/{rocket_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_rocket(
+    rocket_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Delete job by ID."""
-    job = db.query(RocketJob).filter(RocketJob.id == job_id).first()
+    """Delete rocket by ID."""
+    job = db.query(Rocket).filter(Rocket.id == rocket_id).first()
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Job not found"
+            detail="Rocket not found"
         )
+    
+    # Stop the rocket process if it's running
+    airflow_service2.stop_rocket_process(rocket_id)
     
     db.delete(job)
     db.commit()
     return None
 
 
-@router.patch("/{job_id}", response_model=RocketJobResponse)
+@router.patch("/{rocket_id}", response_model=RocketResponse)
 async def update_job(
-    job_id: str,
-    job_update: RocketJobUpdate,
+    rocket_id: str,
+    job_update: RocketUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Update job details or state."""
-    job = db.query(RocketJob).filter(RocketJob.id == job_id).first()
+    job = db.query(Rocket).filter(Rocket.id == rocket_id).first()
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -149,7 +152,7 @@ async def update_job(
     # Create history entry if state changed
     if "state" in update_data:
         history_entry = JobHistory(
-            job_id=job.id,
+            rocket_id=job.id,
             state=update_data["state"],
             message=f"State updated to {update_data['state']}"
         )
@@ -162,54 +165,23 @@ async def update_job(
     return job
 
 
-@router.post("/{job_id}/trigger")
-async def trigger_job_dag(
-    job_id: str,
+
+
+@flight_router.get("/history/{rocket_id}", response_model=RocketHistoryResponse)
+async def get_flight_history(
+    rocket_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Manually trigger or retrigger the Airflow DAG for the job."""
-    job = db.query(RocketJob).filter(RocketJob.id == job_id).first()
+    """Get the flight history for a given flightID."""
+    job = db.query(Rocket).filter(Rocket.id == rocket_id).first()
     if not job:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Job not found"
+            detail="Rocket not found"
         )
     
-    dag_id = "rocket_flight_dag"
-    dag_run_id = airflow_service.trigger_dag(
-        dag_id=dag_id,
-        job_id=job.id,
-        conf={"job_id": str(job.id)}
-    )
-    
-    if dag_run_id:
-        job.airflow_dag_run_id = dag_run_id
-        job.status = JobStatus.RUNNING
-        db.commit()
-        return {"dag_run_id": dag_run_id, "message": "DAG triggered successfully"}
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to trigger DAG"
-        )
-
-
-@router.get("/{job_id}/history", response_model=RocketJobHistoryResponse)
-async def get_job_history(
-    job_id: str,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """Get job state transition history/log."""
-    job = db.query(RocketJob).filter(RocketJob.id == job_id).first()
-    if not job:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Job not found"
-        )
-    
-    history = db.query(JobHistory).filter(JobHistory.job_id == job_id).order_by(JobHistory.timestamp).all()
-    return RocketJobHistoryResponse(history=history)
+    history = db.query(JobHistory).filter(JobHistory.rocket_id == rocket_id).order_by(JobHistory.timestamp).all()
+    return RocketHistoryResponse(history=history)
 
 

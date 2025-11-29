@@ -2,11 +2,20 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from routes import auth_router, rocket_router
+
 from core.database import engine, Base
-from routes import auth_router
+from db_models import flight_orm, rocket_orm, user_orm  # ensure tables register
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
+
+RESET_DATABASE = True
+if RESET_DATABASE:
+    """Drop and recreate all tables."""
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+
 
 # Create FastAPI app
 app = FastAPI(
@@ -26,9 +35,8 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth_router.router)
-# app.include_router(jobs.router)
-# app.include_router(jobs.rocket_router)
-# app.include_router(jobs.flight_router)
+app.include_router(rocket_router.rocket_router)
+# app.include_router(flight_router.router)
 # app.include_router(websockets.router)
 
 

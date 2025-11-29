@@ -1,7 +1,7 @@
 """WebSocket endpoints for live job updates."""
 from typing import List, Optional
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
-from models.rocket_job import RocketJob
+from models.rocket_job import Rocket
 import uuid
 
 router = APIRouter(prefix="/api/v1/ws", tags=["websockets"])
@@ -98,7 +98,7 @@ async def websocket_jobs(
 
 
 # Helper function to broadcast job updates (can be called from other parts of the app)
-async def broadcast_job_update(job: RocketJob, user_id: Optional[uuid.UUID] = None):
+async def broadcast_job_update(job: Rocket, user_id: Optional[uuid.UUID] = None):
     """Broadcast a job update to connected clients."""
     message = {
         "type": "job_update",

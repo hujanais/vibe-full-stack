@@ -14,12 +14,12 @@ class JobHistory(Base):
     __tablename__ = "job_history"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    job_id = Column(UUID(as_uuid=True), ForeignKey("rocket_jobs.id"), nullable=False)
+    rocket_id = Column(UUID(as_uuid=True), ForeignKey("rocket_jobs.id"), nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, nullable=False)
     state = Column(SQLEnum(RocketState), nullable=False)
     message = Column(Text, nullable=True)
     
     # Relationships
-    job = relationship("RocketJob", back_populates="history")
+    job = relationship("Rocket", back_populates="history")
 
 

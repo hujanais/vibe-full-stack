@@ -7,13 +7,13 @@ class RocketState(str, Enum):
     PREPARING = "Preparing"
     READY = "Ready"
     IN_FLIGHT = "InFlight"
-    LANDED_ON_MARS = "Landed_On_Mars"
+    LANDED = "Landed"
     RUD = "RUD"  # Rapid Unscheduled Destruction
 
 
 class JobStatus(str, Enum):
     """Job status enumeration."""
-    PENDING = "pending"
+    IDLE = "idle"
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
