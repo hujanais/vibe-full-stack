@@ -1,5 +1,5 @@
 """Rocket endpoints."""
-from typing import Any
+from typing import Any, List
 from fastapi import APIRouter, Depends, status, Path, Body
 from sqlalchemy.orm import Session
 from core.database import get_db
@@ -11,7 +11,7 @@ rocket_router = APIRouter(prefix="/api/v1/rocket", tags=["rockets"])
 flight_router = APIRouter(prefix="/api/v1/flights", tags=["flights"])
 
 
-@rocket_router.get("", response_model=RocketResponse)
+@rocket_router.get("", response_model=List[RocketResponse])
 async def get_all_rockets(db: Session = Depends(get_db)):
     """Get all rockets."""
     return rocket_api.get_rocket(None)
