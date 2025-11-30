@@ -8,7 +8,7 @@ class RocketState(str, Enum):
     READY = "Ready"
     IN_FLIGHT = "InFlight"
     LANDED = "Landed"
-    RUD = "RUD"  # Rapid Unscheduled Destruction
+    RUD = "RUD"
 
 
 class JobStatus(str, Enum):

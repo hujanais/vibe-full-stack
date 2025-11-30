@@ -40,12 +40,6 @@ class FlightBase(BaseModel):
     user_id: uuid.UUID
     message: Optional[str] = None
 
-
-class FlightCreate(FlightBase):
-    """Flight creation payload."""
-    pass
-
-
 class UpdateFlight(BaseModel):
     """Flight update payload."""
     id: Optional[uuid.UUID] = None
@@ -59,7 +53,6 @@ class UpdateFlight(BaseModel):
     process_id: Optional[str] = None
     user_id: Optional[uuid.UUID] = None
     message: Optional[str] = None
-
 
 class Flight(FlightBase):
     """Flight response schema."""
