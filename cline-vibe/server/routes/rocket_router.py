@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from core.database import get_db
 from api.flight_api import flight_api
 from api.rocket_api import rocket_api
-from models.rocket import RocketCreate, RocketResponse, UpdateFlight
+from models.rocket import RocketCreate, RocketResponse
 
 rocket_router = APIRouter(prefix="/api/v1/rocket", tags=["rockets"])
 flight_router = APIRouter(prefix="/api/v1/flights", tags=["flights"])
@@ -59,19 +59,13 @@ async def get_flights(
     """Get flights by rocket_id."""
     return flight_api.get_flights(rocket_id)
 
-@flight_router.patch("/trigger_flights/{flight_id}")
+@flight_router.post("/trigger/{flight_id}")
 async def trigger_flight(
-    flight_id: str = Path(..., description="Flight ID to update"),
-    flight_data: dict = Body(..., description="Flight update data"),
+    flight_id: str = Path(..., description="Flight ID to trigger"),
     db: Session = Depends(get_db)
 ):
-    """Trigger a new flight."""
-     # Add flight_id to flight_data if not present
-    if "id" not in flight_data and "flight_id" not in flight_data:
-        flight_data["flight_id"] = flight_id
-    
-    flight = UpdateFlight(flight_data)
-    flight_api.trigger_flight(flight)
+    """Trigger (start) the flight for the specified flight_id."""
+    return flight_api.trigger_flight(flight_id)
 
 
 @flight_router.patch("/{flight_id}")
@@ -84,6 +78,12 @@ async def update_flight(
     # Add flight_id to flight_data if not present
     if "id" not in flight_data and "flight_id" not in flight_data:
         flight_data["flight_id"] = flight_id
+    
+    # Convert dict to object-like structure for flight_api
+    class UpdateFlight:
+        def __init__(self, data: dict):
+            for key, value in data.items():
+                setattr(self, key, value)
     
     flight = UpdateFlight(flight_data)
     return flight_api.update_flight(flight)
